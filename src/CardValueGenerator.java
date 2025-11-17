@@ -2,7 +2,6 @@ import java.util.*;
 
 public class CardValueGenerator {
 
-    // All themes stored in one place
     private static final Map<String, List<String>> THEMES = Map.of(
             "Black and White Icons", Arrays.asList("⚫","⚪","⬛","⬜","◼","◻","⚙️","💀"),
             "Nature", Arrays.asList("🌲","🌸","🍀","🌻","🌊","🌳","🍁","🌿"),
@@ -15,7 +14,6 @@ public class CardValueGenerator {
         List<String> pool = THEMES.getOrDefault(theme,
                 Arrays.asList("🍎","🍌","🍇","🍓"));
 
-        // Shuffle pool to randomize chosen icons
         List<String> shuffledPool = new ArrayList<>(pool);
         Collections.shuffle(shuffledPool);
 
