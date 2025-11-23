@@ -7,23 +7,22 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Separator;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.scene.control.Separator;
-import javafx.scene.control.ProgressBar;
 
 import java.util.*;
 
 public class MemoryGame extends Application {
 
-    // Game grid settings
     private int COLS = 4;
     private int ROWS = 4;
     private int CARD_COUNT = COLS * ROWS;
 
-    // Game state
     private Card firstSelected = null;
     private Card secondSelected = null;
     private boolean busy = false;
@@ -33,20 +32,17 @@ public class MemoryGame extends Application {
     private int elapsedSeconds = 0;
     private boolean timerStarted = false;
 
-    // Score
     public int totalScore = 0;
     public int score = 0;
     public int basePoints = 0;
     public int timeBonus = 0;
     public int accuracyBonus = 0;
 
-    // UI elements
     private Label attemptsLabel;
     private Label matchesLabel;
     private Label timeLabel;
     private Timeline timer;
 
-    // Game configuration
     private List<String> cardValues;
     public String selectedLevel = "Classic – 4x4";
     public String selectedTheme = "Black and White Icons";
@@ -60,8 +56,6 @@ public class MemoryGame extends Application {
         levelManager.loadProgress();
         showHomeMenu(primaryStage);
     }
-
-    // --- UI Methods ---
 
     private void showHomeMenu(Stage stage) {
         stage.setScene(HomeMenu.create(stage, this));
@@ -89,20 +83,25 @@ public class MemoryGame extends Application {
         basePoints = 100 * (Arrays.asList(levelManager.getAllLevels()).indexOf(level) + 1);
     }
 
-    // --- Game Initialization ---
-
     public void startGame(Stage stage) {
         resetGameState();
         computeCardSize();
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #fafafa, #e0e0e0);");
 
-        // Top and bottom bars
+        Image backgroundImage = new Image(getClass().getResource("/images/cardsmainbg.png").toExternalForm());
+        BackgroundImage bgImage = new BackgroundImage(
+                backgroundImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(1.0, 1.0, true, true, false, true)
+        );
+        root.setBackground(new Background(bgImage));
+
         root.setTop(makeTopBar(stage));
         root.setBottom(makeBottomBar());
 
-        // Card grid
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(12);
@@ -133,14 +132,13 @@ public class MemoryGame extends Application {
 
     private int getCountdownSeconds(String level) {
         switch (level) {
-            case "Expert – 8x5": return 150;        // 2 min 30 sec
-            case "Master – 8x6": return 180;        // 3 min
-            case "Grandmaster – 9x6": return 210;   // 3 min 30 sec
-            case "Legendary – 10x6": return 240;    // 4 min
-            default: return -1; // negative means no countdown, use normal timer
+            case "Expert – 8x5": return 180;
+            case "Master – 8x6": return 210;
+            case "Grandmaster – 9x6": return 240;
+            case "Legendary – 10x6": return 270;
+            default: return -1;
         }
     }
-
 
     private void resetGameState() {
         firstSelected = null;
@@ -158,29 +156,24 @@ public class MemoryGame extends Application {
     }
 
     private void computeCardSize() {
-        // Base allowed width/height depending on stage size
         double allowedW = 700.0 / COLS * 3;
         double allowedH = 500.0 / ROWS * 3;
 
-        // Scale down card size more aggressively as level index increases
         int levelIndex = Arrays.asList(levelManager.getAllLevels()).indexOf(selectedLevel);
-        double scaleFactor = 1.0 - (levelIndex * 0.20); // reduce 15% per level
-        scaleFactor = Math.max(0.4, scaleFactor); // never go below 40% size
+        double scaleFactor = 1.0 - (levelIndex * 0.20);
+        scaleFactor = Math.max(0.4, scaleFactor);
 
         cardSize = Math.max(50, Math.min(140, Math.min(allowedW, allowedH) * scaleFactor));
     }
-
 
     private HBox makeTopBar(Stage stage) {
         HBox top = new HBox(16);
         top.setPadding(new Insets(12));
         top.setAlignment(Pos.CENTER_LEFT);
 
-        // Title
         Label title = new Label(selectedLevel + " | " + selectedTheme);
         title.setFont(Font.font("Cambria", 20));
 
-        // Stats labels
         attemptsLabel = new Label("Attempts: 0");
         attemptsLabel.setFont(Font.font("Cambria", 18));
 
@@ -190,11 +183,9 @@ public class MemoryGame extends Application {
         timeLabel = new Label("Time: 0:00");
         timeLabel.setFont(Font.font("Cambria", 18));
 
-        // Spacer
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Buttons
         Button home = new Button("Home");
         home.setFont(Font.font("Cambria", 14));
         home.setOnAction(e -> showHomeMenu(stage));
@@ -206,7 +197,6 @@ public class MemoryGame extends Application {
         top.getChildren().addAll(title, attemptsLabel, matchesLabel, timeLabel, spacer, home, restart);
         return top;
     }
-
 
     private HBox makeBottomBar() {
         HBox bottom = new HBox();
@@ -227,8 +217,6 @@ public class MemoryGame extends Application {
         for (String val : cardValues) cards.add(new Card(val, cardSize, this));
         return cards;
     }
-
-    // --- Card Logic ---
 
     public void onCardClicked(Card card) {
         if (busy || card.isMatched() || card.isRevealed()) return;
@@ -267,6 +255,10 @@ public class MemoryGame extends Application {
 
             } else {
                 mismatches++;
+
+                firstSelected.shake();
+                secondSelected.shake();
+
                 firstSelected.hide();
                 secondSelected.hide();
             }
@@ -276,8 +268,6 @@ public class MemoryGame extends Application {
         secondSelected = null;
         busy = false;
     }
-
-    // --- Level Complete & Scoring ---
 
     private void showLevelComplete() {
         if (timer != null) timer.stop();
@@ -296,30 +286,22 @@ public class MemoryGame extends Application {
         layout.setPadding(new Insets(25));
         layout.setAlignment(Pos.CENTER);
 
-// Header
         Label header = new Label(" Level Complete! 🎉");
         header.setFont(Font.font("Cambria", 26));
 
-// Separator
         Separator sep = new Separator();
         sep.setPrefWidth(300);
 
-// ProgressBar
         ProgressBar pb = new ProgressBar();
-        pb.setProgress(1.0); // fully complete
-
-// Make it larger
+        pb.setProgress(1.0);
         pb.setPrefWidth(400);
         pb.setPrefHeight(30);
-
-// Apply blue-to-purple gradient
         pb.setStyle("""
-    -fx-accent: linear-gradient(to right, #2196f3, #9c27b0);
-    -fx-control-inner-background: #e0e0e0;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
-""");
-
+            -fx-accent: linear-gradient(to right, #2196f3, #9c27b0);
+            -fx-control-inner-background: #e0e0e0;
+            -fx-border-radius: 5;
+            -fx-background-radius: 5;
+        """);
 
         Label result = new Label(
                 "Base Points: " + basePoints + "\n" +
@@ -376,13 +358,11 @@ public class MemoryGame extends Application {
         int countdown = getCountdownSeconds(selectedLevel);
 
         if (countdown > 0) {
-            // Countdown timer
-            elapsedSeconds = countdown; // start from countdown
+            elapsedSeconds = countdown;
             timer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
                 int min = elapsedSeconds / 60;
                 int sec = elapsedSeconds % 60;
                 timeLabel.setText(String.format("Time: %d:%02d", min, sec));
-
                 elapsedSeconds--;
                 if (elapsedSeconds < 0) {
                     timer.stop();
@@ -390,7 +370,6 @@ public class MemoryGame extends Application {
                 }
             }));
         } else {
-            // Normal counting up timer
             elapsedSeconds = 0;
             timer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
                 elapsedSeconds++;
@@ -405,7 +384,6 @@ public class MemoryGame extends Application {
     }
 
     private void handleTimeUp() {
-        // Stop game interactions
         busy = true;
         if (timer != null) timer.stop();
 
@@ -450,9 +428,6 @@ public class MemoryGame extends Application {
         popup.setScene(scene);
         popup.show();
     }
-
-
-
 
     private void updateStats() {
         attemptsLabel.setText("Attempts: " + attempts);
